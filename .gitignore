@@ -25,3 +25,5 @@ obj/Debug/net5.0/reunrar.GeneratedMSBuildEditorConfig.editorconfig
 obj/Debug/net5.0/reunrar.genruntimeconfig.cache
 obj/Debug/net5.0/reunrar.pdb
 obj/Debug/net5.0/ref/reunrar.dll
+.vscode/launch.json
+.vscode/tasks.json
