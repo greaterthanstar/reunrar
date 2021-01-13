@@ -27,3 +27,6 @@ obj/Debug/net5.0/reunrar.pdb
 obj/Debug/net5.0/ref/reunrar.dll
 .vscode/launch.json
 .vscode/tasks.json
+/bin/Release/net5.0
+/obj
+/.vs

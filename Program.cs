@@ -6,6 +6,9 @@ using System.IO;
 using SharpCompress.Readers;
 using SharpCompress.Common;
 using SharpCompress.IO;
+using SharpCompress.Archives.Rar;
+using System.Collections.Generic;
+using SharpCompress.Readers.Rar;
 
 namespace reunrar
 {
@@ -47,20 +50,88 @@ namespace reunrar
             }
         }
 
+        static void ExtractRars(string file)
+        {
+            var filename = Path.GetFileNameWithoutExtension(file);
+            var rars = Directory.GetFiles(Path.GetDirectoryName(file), filename + ".r??").ToList()
+                        .Where(f => !f.EndsWith(".rar")).OrderBy(x => x.ToString()).ToList();
+            rars.Insert(0, file);
+
+            var streams = rars.Select(File.OpenRead).ToList();
+            Console.WriteLine($"Extracting rar file {file}");
+            using (var reader = RarReader.Open(streams))
+            {
+                while (reader.MoveToNextEntry())
+                {
+                    reader.WriteEntryToDirectory(Path.GetDirectoryName(file), new ExtractionOptions()
+                    {
+                        ExtractFullPath = true,
+                        Overwrite = true
+                    });
+                    Console.WriteLine($"extracted rar file {reader.Entry.Key}");
+                }
+            }
+            foreach (var stream in streams)
+            {
+                stream.Dispose();
+            }
+
+            foreach (var rar in rars)
+            {
+                File.Delete(rar);
+            }
+        }
+
         static void ExtractRar(string file)
         {
             try {
-                var tr = SharpCompress.Archives.Rar.RarArchive.Open(file);            
-                using (var reader = tr.ExtractAllEntries())
+                //var tr = SharpCompress.Archives.Rar.RarArchive.Open(file);            
+                //using (var reader = tr.ExtractAllEntries())
+                //{
+                //    var options = new ExtractionOptions();
+                //    options.ExtractFullPath = true;
+                //    options.Overwrite = true;
+                //    reader.WriteAllToDirectory(Path.GetDirectoryName(file), options);
+                //}
+                var filename = Path.GetFileNameWithoutExtension(file);
+                var rars = Directory.GetFiles(Path.GetDirectoryName(file), filename + ".r??").ToList()
+                            .Where(f => !f.EndsWith(".rar")).OrderBy(x => x.ToString()).ToList();
+                //var str = File.OpenRead
+                //var reader = RarArchive.Open(file, new ReaderOptions { })
+                List<Stream> streams = new List<Stream>();
+                streams.Add(File.OpenRead(file));
+                foreach(var f in rars)
                 {
-                    var options = new ExtractionOptions();
-                    options.ExtractFullPath = true;
-                    options.Overwrite = true;
-                    reader.WriteAllToDirectory(Path.GetDirectoryName(file), options);
+                    streams.Add(File.OpenRead(f));
+                }
+                //using (Stream stream = File.OpenRead(file))
+                //using (var reader = RarArchive.Open(streams))
+                //{
+                //    foreach(var entry in reader.Entries)
+                //    {
+                //        var curDir = Path.GetDirectoryName(file);
+                //        Console.WriteLine("-> " + entry.Key);
+                //        entry.WriteEntryToDirectory(curDir, new ExtractionOptions()
+                //        {
+                //            ExtractFullPath = true,
+                //            Overwrite = true,
+                //        });
+                //    }
+                //}
+                using (var reader = RarArchive.Open(streams))
+                {
+
+
+                    //using (var entries = reader. ExtractAllEntries())
+                    //{
+                    //    var options = new ExtractionOptions();
+                    //    options.ExtractFullPath = true;
+                    //    options.Overwrite = true;
+                    //    entries.WriteAllToDirectory(Path.GetDirectoryName(file), options);
+                    //}
                 }
                 Console.WriteLine($"extracted rar {file}");
-                //delete rar files
-                var filename = Path.GetFileNameWithoutExtension(file);
+                //delete rar files                
                 foreach(var rar in Directory.EnumerateFiles(Path.GetDirectoryName(file), filename + ".r??"))
                 {
                     Console.WriteLine($"Deleting rar file {rar}");
@@ -119,14 +190,15 @@ namespace reunrar
                         ExtractZip(file);
                         break;
                     case ".rar":
-                        ExtractRar(file);
+                        ExtractRars(file);
                         break;                        
                 }
                     
                 Console.WriteLine($"extracted archive {file}");                            
             }
             // 2nd pass, assumes we deleted all archives while processing
-            if (Directory.EnumerateFiles(dir).ToList().Any())
+            if (Directory.EnumerateFiles(dir).ToList()
+                .Any(s => extensions.Any(ext => ext == Path.GetExtension(s))))
             {
                 ExtractArchives(dir);
             }
